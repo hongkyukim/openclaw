@@ -1,0 +1,107 @@
+{
+  "categories": {
+    "urgent": {
+      "keywords": ["urgent", "emergency", "asap", "critical", "immediately", "danger", "911", "help", "dying", "fire", "crisis", "now", "quick", "fast", "hurry"],
+      "color": "#ef4444",
+      "colorDark": "#dc2626",
+      "ring": "#991b1b",
+      "shape": "exclamation-triangle",
+      "gradient": ["#ef4444", "#b91c1c"]
+    },
+    "warning": {
+      "keywords": ["warning", "careful", "issue", "problem", "concern", "worry", "watch out", "caution", "beware", "risk", "trouble", "broken", "error", "failed", "bug"],
+      "color": "#f97316",
+      "colorDark": "#ea580c",
+      "ring": "#c2410c",
+      "shape": "warning-triangle",
+      "gradient": ["#f97316", "#c2410c"]
+    },
+    "health": {
+      "keywords": ["sick", "ill", "pain", "hurt", "doctor", "hospital", "medicine", "health", "symptom", "fever", "headache", "injury", "medical", "diagnos", "treatment"],
+      "color": "#ef4444",
+      "colorDark": "#b91c1c",
+      "ring": "#dc2626",
+      "shape": "cross",
+      "gradient": ["#ef4444", "#ffffff"]
+    },
+    "finance": {
+      "keywords": ["money", "dollar", "cost", "price", "budget", "expense", "payment", "debt", "loan", "invest", "profit", "loss", "tax", "salary", "afford", "bank", "financial"],
+      "color": "#22c55e",
+      "colorDark": "#15803d",
+      "ring": "#166534",
+      "shape": "dollar",
+      "gradient": ["#22c55e", "#15803d"]
+    },
+    "safety": {
+      "keywords": ["safe", "security", "protect", "shield", "guard", "secure", "lock", "password", "privacy", "threat", "attack", "breach", "hack", "vulnerable"],
+      "color": "#3b82f6",
+      "colorDark": "#1d4ed8",
+      "ring": "#1e40af",
+      "shape": "shield",
+      "gradient": ["#3b82f6", "#1d4ed8"]
+    },
+    "relationship": {
+      "keywords": ["friend", "family", "love", "partner", "relationship", "heart", "miss", "lonely", "together", "breakup", "divorce", "marriage", "care", "affection", "romantic"],
+      "color": "#ec4899",
+      "colorDark": "#be185d",
+      "ring": "#9d174d",
+      "shape": "heart",
+      "gradient": ["#ec4899", "#be185d"]
+    },
+    "work": {
+      "keywords": ["work", "job", "deadline", "meeting", "boss", "office", "project", "task", "schedule", "overtime", "stress", "pressure", "deliverable", "client", "presentation"],
+      "color": "#6366f1",
+      "colorDark": "#4338ca",
+      "ring": "#3730a3",
+      "shape": "clock",
+      "gradient": ["#6366f1", "#4338ca"]
+    },
+    "sad": {
+      "keywords": ["sad", "depressed", "unhappy", "cry", "grief", "loss", "mourning", "hopeless", "despair", "miserable", "tears", "heartbroken", "devastated", "upset"],
+      "color": "#64748b",
+      "colorDark": "#334155",
+      "ring": "#1e293b",
+      "shape": "teardrop",
+      "gradient": ["#94a3b8", "#475569"]
+    },
+    "anxious": {
+      "keywords": ["anxious", "anxiety", "stressed", "panic", "nervous", "overwhelmed", "scared", "fear", "dread", "apprehensive", "tense", "uneasy", "restless", "worried"],
+      "color": "#f59e0b",
+      "colorDark": "#b45309",
+      "ring": "#92400e",
+      "shape": "spiral",
+      "gradient": ["#fbbf24", "#d97706"]
+    },
+    "confused": {
+      "keywords": ["confused", "unsure", "unclear", "don't understand", "what", "why", "how", "lost", "puzzled", "uncertain", "doubt", "question", "wonder", "huh"],
+      "color": "#a855f7",
+      "colorDark": "#7e22ce",
+      "ring": "#581c87",
+      "shape": "question",
+      "gradient": ["#a855f7", "#7e22ce"]
+    },
+    "happy": {
+      "keywords": ["happy", "great", "awesome", "wonderful", "excited", "joy", "celebrate", "good news", "success", "win", "achieve", "amazing", "fantastic", "love it", "glad"],
+      "color": "#10b981",
+      "colorDark": "#059669",
+      "ring": "#065f46",
+      "shape": "sun",
+      "gradient": ["#34d399", "#059669"]
+    },
+    "calm": {
+      "keywords": ["ok", "fine", "alright", "calm", "peaceful", "relax", "chill", "neutral", "normal", "steady", "stable", "good", "doing well"],
+      "color": "#38bdf8",
+      "colorDark": "#0284c7",
+      "ring": "#075985",
+      "shape": "wave",
+      "gradient": ["#7dd3fc", "#0284c7"]
+    }
+  },
+  "default": {
+    "color": "#94a3b8",
+    "colorDark": "#475569",
+    "ring": "#334155",
+    "shape": "wave",
+    "gradient": ["#cbd5e1", "#64748b"]
+  }
+}

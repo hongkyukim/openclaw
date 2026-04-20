@@ -1,0 +1,196 @@
+{
+  "version": "1.0.0",
+  "description": "Maps concern keywords to visual categories and SVG style parameters",
+  "categories": {
+    "urgent": {
+      "keywords": [
+        "urgent", "emergency", "asap", "critical", "immediately", "danger",
+        "fatal", "crisis", "alarm", "sos", "911", "help me", "dying",
+        "fire", "evacuate", "life threatening", "desperate", "severe"
+      ],
+      "color": "#ef4444",
+      "colorLight": "#ff8a8a",
+      "ring": "#dc2626",
+      "shape": "exclamation-triangle",
+      "urgency": 5,
+      "sentiment": "negative",
+      "description": "High-urgency emergencies and critical dangers"
+    },
+    "warning": {
+      "keywords": [
+        "warning", "careful", "issue", "problem", "concern", "worry",
+        "worried", "caution", "watch out", "beware", "alert", "trouble",
+        "mistake", "error", "fault", "wrong", "incorrect", "broken"
+      ],
+      "color": "#f97316",
+      "colorLight": "#ffa855",
+      "ring": "#ea580c",
+      "shape": "warning-triangle",
+      "urgency": 4,
+      "sentiment": "negative",
+      "description": "Warnings, cautions, and issues that need attention"
+    },
+    "anxious": {
+      "keywords": [
+        "anxious", "anxiety", "stress", "stressed", "nervous", "panic",
+        "overwhelmed", "scared", "afraid", "fear", "terrified", "dread",
+        "tense", "uneasy", "restless", "apprehensive", "jittery", "on edge",
+        "freaking out", "freaked", "cant cope", "can't cope"
+      ],
+      "color": "#f59e0b",
+      "colorLight": "#fcd34d",
+      "ring": "#d97706",
+      "shape": "spiral",
+      "urgency": 3,
+      "sentiment": "negative",
+      "description": "Anxiety, stress, and nervousness"
+    },
+    "sad": {
+      "keywords": [
+        "sad", "unhappy", "depressed", "depression", "grief", "sorrow",
+        "cry", "crying", "tears", "heartbroken", "loss", "miss",
+        "lonely", "alone", "hopeless", "miserable", "devastated",
+        "down", "gloomy", "melancholy", "blue", "hurt", "mourn"
+      ],
+      "color": "#6b7280",
+      "colorLight": "#9ca3af",
+      "ring": "#4b5563",
+      "shape": "teardrop",
+      "urgency": 3,
+      "sentiment": "negative",
+      "description": "Sadness, grief, and emotional distress"
+    },
+    "happy": {
+      "keywords": [
+        "happy", "joy", "excited", "wonderful", "great", "amazing",
+        "awesome", "fantastic", "love", "celebrate", "celebration",
+        "success", "win", "winning", "good news", "excellent", "perfect",
+        "thrilled", "delighted", "glad", "elated", "overjoyed", "blessed",
+        "grateful", "thankful", "proud"
+      ],
+      "color": "#10b981",
+      "colorLight": "#6ee7b7",
+      "ring": "#059669",
+      "shape": "sun",
+      "urgency": 1,
+      "sentiment": "positive",
+      "description": "Happiness, joy, and positive emotions"
+    },
+    "calm": {
+      "keywords": [
+        "calm", "relax", "relaxed", "peaceful", "peace", "ok", "fine",
+        "alright", "okay", "steady", "stable", "normal", "neutral",
+        "wondering", "curious", "thinking", "considering", "pondering",
+        "quiet", "gentle", "easy", "simple", "still"
+      ],
+      "color": "#3b82f6",
+      "colorLight": "#93c5fd",
+      "ring": "#2563eb",
+      "shape": "wave",
+      "urgency": 1,
+      "sentiment": "neutral",
+      "description": "Calm, neutral, and reflective states"
+    },
+    "health": {
+      "keywords": [
+        "health", "sick", "ill", "illness", "disease", "pain", "hospital",
+        "doctor", "medicine", "symptoms", "fever", "injury", "hurt",
+        "ache", "medical", "diagnosis", "prescription", "treatment",
+        "surgery", "recovery", "chronic", "condition", "blood pressure",
+        "diabetes", "cancer", "infection", "virus", "covid"
+      ],
+      "color": "#ef4444",
+      "colorLight": "#fca5a5",
+      "ring": "#dc2626",
+      "shape": "cross",
+      "urgency": 4,
+      "sentiment": "negative",
+      "description": "Health issues, medical concerns, and illness"
+    },
+    "finance": {
+      "keywords": [
+        "money", "finance", "financial", "debt", "loan", "bank",
+        "pay", "payment", "bill", "rent", "mortgage", "invest",
+        "investment", "stock", "budget", "expense", "cost", "broke",
+        "credit", "tax", "salary", "income", "savings", "poor",
+        "afford", "expensive", "price", "fee", "insurance", "pension"
+      ],
+      "color": "#10b981",
+      "colorLight": "#6ee7b7",
+      "ring": "#059669",
+      "shape": "dollar",
+      "urgency": 3,
+      "sentiment": "neutral",
+      "description": "Financial matters, money, and economic concerns"
+    },
+    "safety": {
+      "keywords": [
+        "safe", "safety", "secure", "security", "protect", "protection",
+        "threat", "risk", "guard", "shield", "vulnerable", "attack",
+        "breach", "hack", "theft", "robbery", "violence", "abuse",
+        "stalker", "unsafe", "danger zone", "password", "privacy",
+        "data leak", "scam", "fraud", "phishing"
+      ],
+      "color": "#1d4ed8",
+      "colorLight": "#93c5fd",
+      "ring": "#1e40af",
+      "shape": "shield",
+      "urgency": 4,
+      "sentiment": "negative",
+      "description": "Security threats, safety risks, and protection needs"
+    },
+    "confused": {
+      "keywords": [
+        "confused", "confusing", "unclear", "unsure", "uncertain", "lost",
+        "dont understand", "don't understand", "question", "how do",
+        "what is", "why is", "complicated", "complex", "stuck",
+        "not sure", "no idea", "help me understand", "explain",
+        "what does", "how does", "why does", "makes no sense"
+      ],
+      "color": "#8b5cf6",
+      "colorLight": "#c4b5fd",
+      "ring": "#7c3aed",
+      "shape": "question",
+      "urgency": 2,
+      "sentiment": "neutral",
+      "description": "Confusion, uncertainty, and unanswered questions"
+    },
+    "work": {
+      "keywords": [
+        "work", "deadline", "job", "project", "boss", "meeting",
+        "office", "task", "assignment", "career", "professional",
+        "employee", "manager", "overdue", "late", "schedule", "busy",
+        "colleague", "client", "presentation", "report", "interview",
+        "fired", "resign", "layoff", "promotion", "performance review"
+      ],
+      "color": "#475569",
+      "colorLight": "#94a3b8",
+      "ring": "#334155",
+      "shape": "clock",
+      "urgency": 3,
+      "sentiment": "neutral",
+      "description": "Work, career, deadlines, and professional concerns"
+    },
+    "relationship": {
+      "keywords": [
+        "relationship", "love", "partner", "family", "friend", "divorce",
+        "breakup", "break up", "marriage", "girlfriend", "boyfriend",
+        "husband", "wife", "heart", "romance", "dating", "together",
+        "apart", "cheating", "trust", "jealous", "lonely heart",
+        "ex", "crush", "rejection", "proposal", "wedding"
+      ],
+      "color": "#ec4899",
+      "colorLight": "#f9a8d4",
+      "ring": "#db2777",
+      "shape": "heart",
+      "urgency": 3,
+      "sentiment": "neutral",
+      "description": "Relationships, love, family, and social connections"
+    }
+  },
+  "defaults": {
+    "fallback_category": "calm",
+    "default_size": 64,
+    "supported_sizes": [32, 48, 64, 96, 128]
+  }
+}

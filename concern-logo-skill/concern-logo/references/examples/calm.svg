@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <radialGradient id="bg" cx="40%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#93c5fd"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </radialGradient>
+    <filter id="ds" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#2563eb" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <!-- Background -->
+  <circle cx="32" cy="32" r="30" fill="url(#bg)"/>
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#2563eb" stroke-width="2"/>
+  <!-- Wave 1 -->
+  <path d="M13,29.5 Q19.5,23 26,29.5 Q32.5,36 39,29.5 Q45.5,23 52,29.5"
+        fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Wave 2 (dimmer) -->
+  <path d="M13,37.5 Q19.5,31 26,37.5 Q32.5,44 39,37.5 Q45.5,31 52,37.5"
+        fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

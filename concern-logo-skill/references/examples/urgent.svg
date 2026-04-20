@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="gvt8r64" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#b91c1c"/>
+    </linearGradient>
+    <filter id="sirrkmg" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#dc2626" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Outer ring -->
+  <circle cx="32" cy="32" r="30" fill="url(#gvt8r64)" filter="url(#sirrkmg)"/>
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#991b1b" stroke-width="1.5" opacity="0.6"/>
+
+  <!-- Icon -->
+  <g>
+        <polygon points="32,19.020799999999998 17.647999999999996,43.9808 46.352000000000004,43.9808" fill="#fff2" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+        <rect x="30.518" y="26.072" width="2.9640000000000004" height="9.048" rx="0.936" fill="white"/>
+        <circle cx="32" cy="37.928" r="1.5600000000000003" fill="white"/></g>
+</svg>

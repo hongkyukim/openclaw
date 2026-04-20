@@ -1,0 +1,11 @@
+# Personal session logs
+memory/
+
+# Runtime state
+state/
+
+# macOS
+.DS_Store
+
+# Packed skill files (large binary-ish)
+*.skill

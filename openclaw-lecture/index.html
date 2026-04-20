@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenClaw – Major Use Cases</title>
+
+  <!-- Reveal.js CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/moon.css" />
+  <!-- Highlight.js for code -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css" />
+
+  <style>
+    :root {
+      --accent: #5ee7c8;
+      --accent2: #c084fc;
+    }
+    .reveal .slides section {
+      text-align: left;
+    }
+    .reveal h1, .reveal h2, .reveal h3 {
+      color: var(--accent);
+      text-transform: none;
+      letter-spacing: -0.02em;
+    }
+    .reveal .title-slide {
+      text-align: center;
+    }
+    .reveal .title-slide h1 {
+      font-size: 2.4em;
+      color: var(--accent);
+    }
+    .reveal .title-slide .subtitle {
+      color: var(--accent2);
+      font-size: 1.2em;
+      margin-top: 0.3em;
+    }
+    .reveal .title-slide .tagline {
+      color: #ccc;
+      font-size: 0.9em;
+      margin-top: 1em;
+      font-style: italic;
+    }
+    .reveal .emoji-icon {
+      font-size: 2.4em;
+      display: block;
+      margin-bottom: 0.15em;
+    }
+    .reveal ul {
+      margin-left: 1.2em;
+    }
+    .reveal ul li {
+      margin-bottom: 0.45em;
+      line-height: 1.4;
+    }
+    .reveal code {
+      background: rgba(255,255,255,0.08);
+      border-radius: 4px;
+      padding: 0.1em 0.35em;
+      font-size: 0.85em;
+      color: #7dd3fc;
+    }
+    .reveal pre code {
+      background: transparent;
+      padding: 0;
+      font-size: 0.72em;
+    }
+    .reveal pre {
+      margin-top: 0.8em;
+      box-shadow: 0 0 20px rgba(94,231,200,0.15);
+    }
+    .reveal .highlight { color: var(--accent); }
+    .reveal .highlight2 { color: var(--accent2); }
+    .reveal .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2em;
+      margin-top: 0.5em;
+    }
+    .reveal .card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(94,231,200,0.2);
+      border-radius: 8px;
+      padding: 0.7em 1em;
+    }
+    .reveal .card h4 {
+      color: var(--accent2);
+      margin: 0 0 0.3em 0;
+      font-size: 0.85em;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .reveal .badge {
+      display: inline-block;
+      background: rgba(94,231,200,0.15);
+      border: 1px solid rgba(94,231,200,0.4);
+      border-radius: 20px;
+      padding: 0.1em 0.7em;
+      font-size: 0.7em;
+      color: var(--accent);
+      margin: 0.1em;
+    }
+    .reveal .closing-slide {
+      text-align: center;
+    }
+    .reveal .closing-slide h2 {
+      font-size: 1.8em;
+    }
+    .reveal .closing-slide .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.5em;
+      margin: 1em 0;
+      text-align: center;
+    }
+    .reveal .closing-slide .summary-grid span {
+      font-size: 1.5em;
+    }
+    .reveal .slide-number {
+      color: rgba(94,231,200,0.4) !important;
+    }
+  </style>
+</head>
+<body>
+<div class="reveal">
+  <div class="slides">
+
+    <!-- ─── SLIDE 1: Title ─────────────────────────────── -->
+    <section class="title-slide">
+      <div style="font-size:3em; margin-bottom:0.3em;">🦞</div>
+      <h1>OpenClaw</h1>
+      <div class="subtitle">Major Use Cases &amp; Platform Overview</div>
+      <div class="tagline">"The personal AI assistant that never sleeps — and knows where everything is."</div>
+      <div style="margin-top:2em; color:#888; font-size:0.7em;">
+        Lecture Presentation · 2026
+      </div>
+      <aside class="notes">
+        Welcome! Today we explore what OpenClaw actually does — not just what it is.
+        OpenClaw is a personal AI assistant platform that runs locally or on a VPS,
+        connects to your accounts, and acts as your always-on AI companion.
+        We'll cover 10 major use cases, each with real CLI examples.
+      </aside>
+    </section>
+
+    <!-- ─── SLIDE 2: What Is OpenClaw ─────────────────── -->
+    <section>
+      <span class="emoji-icon">🧩</span>
+      <h2>What Is OpenClaw?</h2>
+      <ul>
+        <li>A <span class="highlight">personal AI assistant platform</span> — runs on macOS, Linux, or a VPS</li>
+        <li>Connects to your real accounts: email, calendar, GitHub, messaging, and more</li>
+        <li>Always-on <span class="highlight2">Gateway daemon</span> — proactive, not just reactive</li>
+        <li>Extensible <span class="highlight">skill system</span> via <code>clawhub.ai</code></li>
+        <li>Multi-model: Claude, GPT, Gemini, and more</li>
+      </ul>
+      <div class="grid-2" style="margin-top:1em;">
+        <div class="card">
+          <h4>Local</h4>
+          macOS companion app, instant access, your data stays home
+        </div>
+        <div class="card">
+          <h4>Remote</h4>
+          Headless gateway on VPS/Pi, accessible anywhere via tailnet or reverse proxy
+        </div>
+      </div>
+      <aside class="notes">
+        OpenClaw is designed to be YOUR assistant — not a SaaS product that owns your data.
+        It runs where you run it. Skills define capabilities; the gateway daemon keeps it alive.
+      </aside>
+    </section>
+
+    <!-- ─── SLIDE 3: Personal Productivity ────────────── -->
+    <section>
+      <span class="emoji-icon">📅</span>
+      <h2>Personal Productivity Assistant</h2>
+      <ul>
+        <li>Manage <span class="highlight">Apple Reminders</span> — add, complete, filter by date or list</li>
+        <li>Create and search <span class="highlight">Apple Notes</span> and Obsidian vaults</li>
+        <li>Check your <span class="highlight2">calendar</span> for upcoming events, conflicts, and deadlines</li>
+        <li>Proactively surfaces what matters — before you think to ask</li>
+        <li>Works in natural language: <em>"Remind me to call the dentist tomorrow at 9am"</em></li>
+      </ul>
+      <pre><code class="language-bash"># Agent manages reminders via CLI
+remindctl add "Call dentist" --due "2026-04-14 09:00" --list Work
+remindctl list --due-before "2026-04-15" --format json</code></pre>
+      <aside class="notes">
+        The apple-reminders and apple-notes skills use native macOS CLIs.
+        No cloud sync required — works fully offline on your Mac.
+        Obsidian vaults are plain Markdown, so the agent reads and writes them directly.
+      </aside>
+    </section>
+
+    <!-- ─── SLIDE 4: Coding Agent Orchestration ─────── -->
+    <section>
+      <span class="emoji-icon">🤖</span>
+      <h2>Coding Agent Orchestration</h2>
+      <ul>
+        <li>Delegate complex coding tasks to <span class="highlight">Claude Code</span> or <span class="highlight2">Codex</span></li>
+        <li>Build features, fix bugs, refactor — hands-free in the background</li>
+        <li>Review pull requests in isolated temp directories</li>
+        <li>Run multiple agents <span class="highlight">in parallel</span> with git worktrees</li>
+        <li>Auto-notified when work completes via system events</li>
+      </ul>
+      <pre><code class="language-bash"># Spawn Claude Code on a project (background)
+cd ~/Projects/myapp
+claude --permission-mode bypassPermissions --print \
+  "Add rate limiting to the /api/v1/users endpoint"
+
+# Or via Codex (full-auto, sandboxed)
+codex --full-auto "Fix the broken pagination in UserList component"</code></pre>
+      <aside class="notes">
+        OpenClaw orchestrates coding agents — it doesn't write the code itself.
+        Claude Code uses --print --permission-mode bypassPermissions for non-interactive runs.
+        Codex needs PTY and a git repo. Parallel PRs reviewed simultaneously with git worktrees.
+      </aside>
+    </section>
+
+    <!-- ─── SLIDE 5: Multi-Channel Messaging Hub ──────── -->
+    <section>
+      <span class="emoji-icon">💬</span>
+      <h2>Multi-Channel Messaging Hub</h2>
+      <ul>
+        <li>Unified access across <span class="highlight">Discord, Signal, Telegram, WhatsApp</span></li>
+        <li>Single assistant instance — one context, all channels</li>
+        <li>Smart reply routing: replies land back on the originating platform</li>
+        <li>In group chats: <span class="highlight2">participates like a human</span> — reacts, knows when to stay quiet</li>
+        <li>Emoji reactions on Discord/Slack for lightweight acknowledgment</li>
+      </ul>
+      <div class="grid-2" style="margin-top:0.8em;">
+        <div class="card">
+          <h4>Inbound</h4>
+          Messages from any channel reach the agent with full context
+        </div>
+        <div class="card">
+          <h4>Outbound</h4>
+          Replies route back to the correct platform automatically
+        </div>
+      </div>
+      <aside class="notes">
+        OpenClaw acts as a bridge between all your messaging platforms and your AI assistant.
+        In group chats, it's designed to NOT respond to everything — quality over quantity.
+        The Discord skill supports rich formatting, reactions, and thread-aware sessions.
+      </aside>
+    </section>
+
+    <!-- ─── SLIDE 6: Proactive Monitoring & Alerts ──── -->
+    <section>
+      <span class="emoji-icon">⏰</span>
+      <h2>Proactive Monitoring &amp; Alerts</h2>
+      <ul>
+        <li><span class="highlight">Heartbeat system</span> — periodic background checks (email, calendar, weather)</li>
+        <li><span class="highlight2">Cron scheduler</span> — exact-time jobs with isolation from main session</li>
+        <li>Checks inbox for urgent messages and surfaces them</li>
+        <li>Calendar alerts when events are within 2 hours</li>
+        <li>Configurable in <code>HEARTBEAT.md</code> — no code required</li>
+      </ul>
+      <pre><code class="language-bash"># Schedule a security audit every Monday at 9am
+openclaw cron add \
+  --name "healthcheck:security-audit" \
+  --schedule "0 9 * * 1" \
+  --task "run healthcheck skill"
+
+# One-shot reminder in 20 minutes
+openclaw cron add --name "remind-standup" \
+  --schedule "+20m" --task "remind me about standup"</code></pre>
+      <aside class="notes">
+        Heartbeats vs cron: heartbeats batch multiple checks together at approximate intervals;
+        cron is for exact-time, isolated, one-shot or recurring jobs.
+        HEARTBEAT.md is a plain text checklist — the agent reads it on every wake.
+      </aside>
+    </section>
+
+    <!-- ─── SLIDE 7: GitHub / DevOps Automation ──────── -->
+    <section>
+      <span class="emoji-icon">🐙</span>
+      <h2>GitHub &amp; DevOps Automation</h2>
+      <ul>
+        <li>Fetch issues, filter by label/milestone/assignee</li>
+        <li>Spawn coding agents to <span class="highlight">implement fixes and open PRs</span></li>
+        <li>Monitor PR review comments — auto-iterate until merged</li>
+        <li>Watch CI runs, surface failures, fetch logs</li>
+        <li><code>gh-issues</code> skill: full hands-free issue-to-PR pipeline</li>
+      </ul>
+      <pre><code class="language-bash"># Auto-fix open bugs and open PRs
+/gh-issues owner/repo --label bug --limit 5 --watch
+
+# Check PR status and CI
+gh pr status
+gh run list --branch main --limit 5
+gh run view 12345 --log-failed</code></pre>
+      <aside class="notes">
+        The gh-issues skill is a full orchestration pipeline.
+        It fetches issues, delegates fixes to coding agents, monitors PRs, and
+        responds to review comments — all without manual intervention.
+        --watch mode keeps looping until all issues have merged PRs.
+      </aside>
+    </section>
+
+    <!-- ─── SLIDE 8: Security & Host Hardening ────────── -->
+    <section>
+      <span class="emoji-icon">🔒</span>
+      <h2>Security &amp; Host Hardening</h2>
+      <ul>
+        <li>Deep security audit of the OpenClaw host machine</li>
+        <li>Checks: <span class="highlight">open ports, firewall status, disk encryption, SSH config</span></li>
+        <li>Risk tolerance profiles: Home Balanced, VPS Hardened, Developer Convenience</li>
+        <li>Step-by-step remediation plan with exact commands</li>
+        <li>Scheduled periodic audits via <span class="highlight2">cron integration</span></li>
+      </ul>
+      <pre><code class="language-bash"># Run a deep security audit
+openclaw security audit --deep
+
+# Apply OpenClaw safe defaults (file permissions, gateway config)
+openclaw security audit --fix
+
+# Check for available updates
+openclaw update status</code></pre>
+      <aside class="notes">
+        The healthcheck skill walks through OS hardening — firewall, SSH, updates, encryption.
+        It never changes host settings without explicit approval.
+        Prefer reversible, staged changes with a rollback plan.
+        Always shows the full plan before executing anything.
+      </aside>
+    </section>
+
+    <!-- ─── SLIDE 9: Knowledge & Memory ──────────────── -->
+    <section>
+      <span class="emoji-icon">🧠</span>
+      <h2>Knowledge &amp; Memory System</h2>
+      <ul>
+        <li><code>MEMORY.md</code> — curated long-term memory (private, main session only)</li>
+        <li><code>memory/YYYY-MM-DD.md</code> — daily raw logs of what happened</li>
+        <li><span class="highlight">Obsidian vault</span> integration — read, write, and search plain-markdown notes</li>
+        <li>Session log search — semantically query past conversations</li>
+        <li>Agent updates memory autonomously; <span class="highlight2">no manual journaling needed</span></li>
+      </ul>
+      <div class="grid-2" style="margin-top:0.8em;">
+        <div class="card">
+          <h4>Short-term</h4>
+          Daily files — raw event logs, decisions, code snippets
+        </div>
+        <div class="card">
+          <h4>Long-term</h4>
+          MEMORY.md — distilled wisdom, preferences, lessons learned
+        </div>
+      </div>
+      <aside class="notes">
+        The agent wakes up fresh each session but reads its memory files first.
+        MEMORY.md is only loaded in private main sessions — not in group chats — for security.
+        The session-logs skill uses jq to search indexed conversation history.
+      </aside>
+    </section>
+
+    <!-- ─── SLIDE 10: Web Research & Summarization ────── -->
+    <section>
+      <span class="emoji-icon">🌐</span>
+      <h2>Web Research &amp; Summarization</h2>
+      <ul>
+        <li>Current <span class="highlight">weather</span> and forecasts via wttr.in / Open-Meteo (no API key)</li>
+        <li>DuckDuckGo web search — titles, URLs, snippets</li>
+        <li>Fetch and extract readable content from any URL (HTML → markdown)</li>
+        <li><span class="highlight2">Summarize</span> URLs, YouTube videos, podcasts, and local files</li>
+        <li>Gemini CLI for one-shot Q&amp;A, generation, and analysis</li>
+      </ul>
+      <pre><code class="language-bash"># Get weather for a city
+# → uses wttr.in or Open-Meteo, no config needed
+
+# Summarize a YouTube video or article URL
+# → summarize skill fetches transcript, returns clean summary
+
+# One-shot Gemini query
+gemini -p "Explain the CAP theorem in 3 sentences"</code></pre>
+      <aside class="notes">
+        The weather skill needs zero setup — just ask.
+        The summarize skill is a great fallback for "transcribe this YouTube video" requests.
+        Web fetch converts HTML to clean markdown for further processing by the agent.
+      </aside>
+    </section>
+
+    <!-- ─── SLIDE 11: Skill Ecosystem ─────────────────── -->
+    <section>
+      <span class="emoji-icon">🛒</span>
+      <h2>Skill Ecosystem (clawhub.ai)</h2>
+      <ul>
+        <li>Skills are <span class="highlight">modular, installable capabilities</span> — like npm packages for AI</li>
+        <li>Install new skills on-the-fly: <code>clawhub install &lt;skill&gt;</code></li>
+        <li>Update to latest or pin a specific version</li>
+        <li>Publish your own skills to share with the community</li>
+        <li>Each skill is a folder with a <code>SKILL.md</code> + optional scripts/references</li>
+      </ul>
+      <pre><code class="language-bash"># Browse and install a skill
+clawhub search "slack"
+clawhub install slack-notifier
+
+# Update all installed skills
+clawhub update --all
+
+# Publish your custom skill
+clawhub publish ./my-skill/</code></pre>
+      <div style="margin-top:0.8em;">
+        <span class="badge">apple-notes</span>
+        <span class="badge">coding-agent</span>
+        <span class="badge">github</span>
+        <span class="badge">healthcheck</span>
+        <span class="badge">obsidian</span>
+        <span class="badge">weather</span>
+        <span class="badge">summarize</span>
+        <span class="badge">gh-issues</span>
+        <span class="badge">tmux</span>
+        <span class="badge">taskflow</span>
+      </div>
+      <aside class="notes">
+        Skills are the extensibility layer of OpenClaw.
+        Any capability can be packaged as a skill — the SKILL.md tells the agent how to use it.
+        clawhub.ai is the public registry; private skills live in your workspace.
+      </aside>
+    </section>
+
+    <!-- ─── SLIDE 12: Group Chat Participation ────────── -->
+    <section>
+      <span class="emoji-icon">👥</span>
+      <h2>Smart Group Chat Participation</h2>
+      <ul>
+        <li>Joins Discord servers, Telegram groups, WhatsApp chats as a <span class="highlight">real participant</span></li>
+        <li>Knows <em>when not</em> to speak — doesn't flood casual conversation</li>
+        <li>Responds when directly mentioned, asked a question, or can add real value</li>
+        <li>Uses <span class="highlight2">emoji reactions</span> for lightweight acknowledgment (👍 ❤️ 🤔)</li>
+        <li>Never shares private user data in group contexts</li>
+      </ul>
+      <div class="card" style="margin-top:1em; border-color: rgba(192,132,252,0.3);">
+        <h4>The Human Rule</h4>
+        Humans in group chats don't respond to every message. Neither should the assistant.
+        Quality over quantity. If you wouldn't send it in a real group chat — don't send it.
+      </div>
+      <aside class="notes">
+        This is a UX philosophy, not just a feature.
+        The agent has access to everything but behaves like a respectful participant.
+        MEMORY.md is never loaded in group chats to prevent private data leakage.
+      </aside>
+    </section>
+
+    <!-- ─── SLIDE 13: TaskFlow & Durable Tasks ────────── -->
+    <section>
+      <span class="emoji-icon">🔄</span>
+      <h2>TaskFlow: Durable Multi-Step Jobs</h2>
+      <ul>
+        <li>Long-running work that <span class="highlight">spans multiple sessions</span> without losing state</li>
+        <li>Child task linkage — parent job tracks sub-tasks (e.g., one per PR)</li>
+        <li>Waiting states — pause for an API response or human decision, resume automatically</li>
+        <li>Revision-checked mutations — never double-applies a change</li>
+        <li>Powers inbox triage, overnight pipelines, and scheduled report generation</li>
+      </ul>
+      <pre><code class="language-yaml"># Example: inbox triage flow
+flow: inbox-triage
+tasks:
+  - id: fetch-emails
+    then: classify
+  - id: classify
+    routes:
+      urgent: notify-now
+      needs-reply: draft-reply
+      newsletter: weekly-summary</code></pre>
+      <aside class="notes">
+        TaskFlow is the durable substrate under skills like gh-issues and complex agent pipelines.
+        It handles flow identity, waiting state, and user-facing emergence.
+        Use it when work outlives a single conversation turn.
+      </aside>
+    </section>
+
+    <!-- ─── SLIDE 14: Architecture Summary ────────────── -->
+    <section>
+      <span class="emoji-icon">🏗️</span>
+      <h2>Architecture at a Glance</h2>
+      <div class="grid-2">
+        <div>
+          <ul style="font-size:0.9em;">
+            <li><span class="highlight">Gateway Daemon</span> — always-on, handles routing</li>
+            <li><span class="highlight2">Skill System</span> — modular, SKILL.md-driven</li>
+            <li><span class="highlight">Memory Layer</span> — MEMORY.md + daily files</li>
+            <li><span class="highlight2">Cron + Heartbeat</span> — proactive scheduling</li>
+            <li><span class="highlight">Multi-model</span> — Claude, GPT, Gemini</li>
+            <li><span class="highlight2">Multi-channel</span> — Discord, Signal, Telegram, WhatsApp</li>
+          </ul>
+        </div>
+        <div>
+          <pre><code class="language-bash">openclaw gateway start
+openclaw status
+openclaw security audit
+openclaw update status
+openclaw cron list
+openclaw health --json</code></pre>
+        </div>
+      </div>
+      <aside class="notes">
+        OpenClaw's architecture is deliberately simple: a gateway daemon, a skill loader,
+        a memory layer, and a scheduler. Everything else is a skill.
+        The agent picks the right skill based on natural language intent.
+      </aside>
+    </section>
+
+    <!-- ─── SLIDE 15: Closing ──────────────────────────── -->
+    <section class="closing-slide">
+      <span class="emoji-icon">🦞</span>
+      <h2>OpenClaw: Your AI at Home</h2>
+      <div class="summary-grid">
+        <span title="Productivity">📅</span>
+        <span title="Coding">🤖</span>
+        <span title="Messaging">💬</span>
+        <span title="Monitoring">⏰</span>
+        <span title="GitHub">🐙</span>
+        <span title="Security">🔒</span>
+        <span title="Memory">🧠</span>
+        <span title="Web">🌐</span>
+        <span title="Skills">🛒</span>
+        <span title="Groups">👥</span>
+      </div>
+      <ul style="text-align:left; font-size:0.85em; max-width:600px; margin:0 auto;">
+        <li>Runs <strong>locally</strong> — your data, your machine, your assistant</li>
+        <li>Skills make it <strong>infinitely extensible</strong> — no code required to add capabilities</li>
+        <li>Proactive by design — it reaches out, not just responds</li>
+        <li>Community: <span class="highlight">discord.com/invite/clawd</span> · Skills: <span class="highlight2">clawhub.ai</span></li>
+      </ul>
+      <div style="margin-top:1.2em; color:#888; font-size:0.75em;">
+        Docs: docs.openclaw.ai · Source: github.com/openclaw/openclaw
+      </div>
+      <aside class="notes">
+        OpenClaw is about giving you an AI assistant that actually works for you —
+        on your terms, with your accounts, in your channels.
+        The skill ecosystem means it grows with your needs.
+        Thank you! Questions?
+      </aside>
+    </section>
+
+  </div><!-- /.slides -->
+</div><!-- /.reveal -->
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'slide',
+    transitionSpeed: 'fast',
+    backgroundTransition: 'fade',
+    controls: true,
+    progress: true,
+    center: false,
+    width: 1280,
+    height: 720,
+    margin: 0.06,
+    plugins: [ RevealNotes, RevealHighlight ]
+  });
+</script>
+</body>
+</html>
