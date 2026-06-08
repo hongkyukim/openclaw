@@ -867,17 +867,21 @@ describe("installPluginFromNpmSpec e2e", () => {
       openclaw?: { managedPeerDependencies?: string[] };
     };
     let rootManifest: ManagedRootManifest | null = null;
+    let rootManifestMissing = false;
     try {
       rootManifest = JSON.parse(
         await fs.readFile(path.join(projectRoot, "package.json"), "utf8"),
       ) as ManagedRootManifest;
     } catch (error) {
       expect((error as NodeJS.ErrnoException).code).toBe("ENOENT");
+      rootManifestMissing = true;
     }
     if (rootManifest) {
       expect(rootManifest.dependencies?.[blockedPlugin]).toBeUndefined();
       expect(rootManifest.dependencies?.[runtimePeer]).toBeUndefined();
       expect(rootManifest.openclaw?.managedPeerDependencies ?? []).not.toContain(runtimePeer);
+    } else {
+      expect(rootManifestMissing).toBe(true);
     }
     await expect(
       fs.lstat(path.join(projectRoot, "node_modules", blockedPlugin, "package.json")),
