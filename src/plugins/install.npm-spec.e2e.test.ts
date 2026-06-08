@@ -862,17 +862,15 @@ describe("installPluginFromNpmSpec e2e", () => {
 
     expect(result.ok).toBe(false);
     const projectRoot = pluginNpmProjectRoot(npmRoot, blockedPlugin);
-    let rootManifest: {
+    type ManagedRootManifest = {
       dependencies?: Record<string, string>;
       openclaw?: { managedPeerDependencies?: string[] };
-    } | null = null;
+    };
+    let rootManifest: ManagedRootManifest | null = null;
     try {
       rootManifest = JSON.parse(
         await fs.readFile(path.join(projectRoot, "package.json"), "utf8"),
-      ) as {
-        dependencies?: Record<string, string>;
-        openclaw?: { managedPeerDependencies?: string[] };
-      };
+      ) as ManagedRootManifest;
     } catch (error) {
       expect((error as NodeJS.ErrnoException).code).toBe("ENOENT");
     }
