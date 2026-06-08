@@ -2151,10 +2151,10 @@ describe("DiscordVoiceManager", () => {
     const disconnected = connection.handlers.get("disconnected");
     expect(disconnected).toBeTypeOf("function");
     await disconnected?.();
+    await vi.waitFor(() => expect(connection.destroy).toHaveBeenCalledTimes(1));
 
     expect(entersStateMock).toHaveBeenCalledWith(connection, "signalling", 20_000);
     expect(entersStateMock).toHaveBeenCalledWith(connection, "connecting", 20_000);
-    expect(connection.destroy).toHaveBeenCalledTimes(1);
     expect(manager.status()).toStrictEqual([]);
   });
 
@@ -2172,10 +2172,10 @@ describe("DiscordVoiceManager", () => {
     const disconnected = connection.handlers.get("disconnected");
     expect(disconnected).toBeTypeOf("function");
     await disconnected?.();
+    await vi.waitFor(() => expect(connection.destroy).toHaveBeenCalledTimes(1));
 
     expect(entersStateMock).toHaveBeenCalledWith(connection, "signalling", 15_000);
     expect(entersStateMock).toHaveBeenCalledWith(connection, "connecting", 15_000);
-    expect(connection.destroy).toHaveBeenCalledTimes(1);
     expect(manager.status()).toStrictEqual([]);
   });
 
@@ -2200,9 +2200,9 @@ describe("DiscordVoiceManager", () => {
     const disconnected = connection.handlers.get("disconnected");
     expect(disconnected).toBeTypeOf("function");
     await disconnected?.();
+    await vi.waitFor(() => expect(realtimeSessionMock.close).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(connection.destroy).toHaveBeenCalledTimes(1));
 
-    expect(realtimeSessionMock.close).toHaveBeenCalledTimes(1);
-    expect(connection.destroy).toHaveBeenCalledTimes(1);
     expect(manager.status()).toStrictEqual([]);
   });
 
