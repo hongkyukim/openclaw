@@ -448,7 +448,6 @@ async function waitForAssertion(assertion: () => void, timeoutMs = 1000, stepMs 
     } catch (error) {
       lastError = error;
     }
-    await Promise.resolve();
     await waitForRealTimer(stepMs);
   }
   if (lastError instanceof Error) {
