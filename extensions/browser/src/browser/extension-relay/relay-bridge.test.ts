@@ -8,12 +8,14 @@ class FakeSocket {
   readonly sent: unknown[] = [];
   closed = false;
   closeCode?: number;
+  closeReason?: string;
   send(data: string): void {
     this.sent.push(JSON.parse(data));
   }
-  close(code?: number): void {
+  close(code?: number, reason?: string): void {
     this.closed = true;
     this.closeCode = code;
+    this.closeReason = reason;
   }
   /** Frames of a given method (client CDP responses/events). */
   frames(): Array<Record<string, unknown>> {
@@ -85,6 +87,131 @@ const flush = () =>
   });
 
 describe("ExtensionRelayBridge", () => {
+  it("retires an unresponsive extension and immediately fails pending CDP work", async () => {
+    vi.useFakeTimers();
+    const onStateChange = vi.fn();
+    const bridge = new ExtensionRelayBridge({ onStateChange });
+    try {
+      const { socket, handlers } = wireExtension(bridge);
+      sendHello(handlers);
+
+      const client = new FakeSocket();
+      const cdp = bridge.attachCdpClientSocket(client);
+      cdp.onMessage(
+        JSON.stringify({ id: 1, method: "Target.setAutoAttach", params: { autoAttach: true } }),
+      );
+      await vi.advanceTimersByTimeAsync(0);
+      const attached = client.frames().find((frame) => frame.method === "Target.attachedToTarget");
+      const sessionId = (attached?.params as { sessionId?: string } | undefined)?.sessionId;
+      expect(typeof sessionId).toBe("string");
+
+      socket.send = (data) => FakeSocket.prototype.send.call(socket, data);
+      await vi.advanceTimersByTimeAsync(50_000);
+      expect(socket.frames().filter((frame) => frame.type === "ping")).toHaveLength(2);
+
+      cdp.onMessage(JSON.stringify({ id: 2, sessionId, method: "Page.getFrameTree" }));
+      expect(socket.frames().at(-1)).toMatchObject({ type: "cdp", method: "Page.getFrameTree" });
+      await vi.advanceTimersByTimeAsync(9_999);
+      expect(bridge.extensionConnected).toBe(true);
+      expect(client.frames().find((frame) => frame.id === 2)).toBeUndefined();
+
+      await vi.advanceTimersByTimeAsync(1);
+      expect(socket).toMatchObject({
+        closed: true,
+        closeCode: 4000,
+        closeReason: "extension heartbeat timeout",
+      });
+      expect(bridge.extensionConnected).toBe(false);
+      expect(client.frames().find((frame) => frame.id === 2)).toMatchObject({
+        error: { message: "extension disconnected" },
+      });
+      expect(onStateChange).toHaveBeenCalledTimes(2);
+
+      handlers.onClose();
+      expect(onStateChange).toHaveBeenCalledTimes(2);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      bridge.dispose();
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps an extension alive when each heartbeat receives an immediate pong", async () => {
+    vi.useFakeTimers();
+    const bridge = new ExtensionRelayBridge();
+    try {
+      const { socket, handlers } = wireExtension(bridge);
+      const send = socket.send.bind(socket);
+      socket.send = (data) => {
+        send(data);
+        if ((JSON.parse(data) as { type: string }).type === "ping") {
+          handlers.onMessage(JSON.stringify({ type: "pong" }));
+        }
+      };
+      sendHello(handlers);
+
+      await vi.advanceTimersByTimeAsync(120_000);
+
+      expect(socket.frames().filter((frame) => frame.type === "ping")).toHaveLength(6);
+      expect(socket.closed).toBe(false);
+      expect(bridge.extensionConnected).toBe(true);
+    } finally {
+      bridge.dispose();
+      vi.useRealTimers();
+    }
+  });
+
+  it("gives a replacement extension its own heartbeat budget and ignores stale owners", async () => {
+    vi.useFakeTimers();
+    const bridge = new ExtensionRelayBridge();
+    try {
+      const previous = wireExtension(bridge);
+      sendHello(previous.handlers);
+      await vi.advanceTimersByTimeAsync(40_000);
+
+      const replacement = wireExtension(bridge);
+      sendHello(replacement.handlers);
+      expect(previous.socket.closed).toBe(true);
+
+      await vi.advanceTimersByTimeAsync(40_000);
+      previous.handlers.onMessage(JSON.stringify({ type: "pong" }));
+      previous.handlers.onClose();
+      await vi.advanceTimersByTimeAsync(19_999);
+      expect(replacement.socket.closed).toBe(false);
+      expect(bridge.extensionConnected).toBe(true);
+
+      await vi.advanceTimersByTimeAsync(1);
+      expect(replacement.socket).toMatchObject({
+        closed: true,
+        closeCode: 4000,
+        closeReason: "extension heartbeat timeout",
+      });
+      expect(bridge.extensionConnected).toBe(false);
+    } finally {
+      bridge.dispose();
+      vi.useRealTimers();
+    }
+  });
+
+  it("clears the extension heartbeat when its bridge is disposed", async () => {
+    vi.useFakeTimers();
+    const bridge = new ExtensionRelayBridge();
+    try {
+      const { socket, handlers } = wireExtension(bridge);
+      sendHello(handlers);
+      expect(vi.getTimerCount()).toBe(1);
+
+      bridge.dispose();
+
+      expect(vi.getTimerCount()).toBe(0);
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(socket.frames().filter((frame) => frame.type === "ping")).toHaveLength(0);
+    } finally {
+      bridge.dispose();
+      vi.useRealTimers();
+    }
+  });
+
   it("reports the paired browser identity through Browser.getVersion", async () => {
     const bridge = new ExtensionRelayBridge();
     const { handlers } = wireExtension(bridge);
@@ -572,6 +699,113 @@ describe("ExtensionRelayBridge", () => {
     handlers.onMessage(JSON.stringify({ type: "tabs", tabs: [] }));
     expect(socket.closed).toBe(true);
     expect(bridge.extensionConnected).toBe(false);
+  });
+
+  it("keeps the active extension while a candidate is pending, malformed, or closed", () => {
+    const bridge = new ExtensionRelayBridge();
+    const active = wireExtension(bridge);
+    sendHello(active.handlers);
+
+    const pendingSocket = new FakeSocket();
+    const pending = bridge.attachExtensionSocket(pendingSocket);
+    expect(active.socket.closed).toBe(false);
+    expect(bridge.identity?.browserVersion).toBe("Chrome/144.0.0.0");
+
+    pending.onClose();
+    sendHello(pending);
+    expect(bridge.extensionConnected).toBe(true);
+    expect(active.socket.closed).toBe(false);
+
+    const malformedSocket = new FakeSocket();
+    const malformed = bridge.attachExtensionSocket(malformedSocket);
+    malformed.onMessage(
+      JSON.stringify({
+        type: "hello",
+        userAgent: "candidate",
+        browserVersion: "Chrome/145.0.0.0",
+        extensionVersion: "2.0.0",
+      }),
+    );
+    expect(malformedSocket).toMatchObject({
+      closed: true,
+      closeCode: 4001,
+      closeReason: "expected valid hello",
+    });
+    expect(bridge.identity?.browserVersion).toBe("Chrome/144.0.0.0");
+    expect(active.socket.closed).toBe(false);
+  });
+
+  it("replaces the active extension only after the candidate sends a valid hello", () => {
+    const bridge = new ExtensionRelayBridge();
+    const active = wireExtension(bridge);
+    sendHello(active.handlers);
+
+    const candidateSocket = new FakeSocket();
+    const candidate = bridge.attachExtensionSocket(candidateSocket);
+    sendHello(candidate, [
+      { tabId: 2, url: "https://candidate.example", title: "Candidate", active: true },
+    ]);
+
+    expect(active.socket).toMatchObject({
+      closed: true,
+      closeCode: 4000,
+      closeReason: "replaced by newer extension connection",
+    });
+    expect(bridge.identity?.browserVersion).toBe("Chrome/144.0.0.0");
+    expect(bridge.sharedTabs()).toEqual([
+      { tabId: 2, url: "https://candidate.example", title: "Candidate", active: true },
+    ]);
+
+    active.handlers.onClose();
+    expect(bridge.extensionConnected).toBe(true);
+    expect(bridge.sharedTabs()).toHaveLength(1);
+  });
+
+  it("rejects an older candidate when a newer candidate promotes first", () => {
+    const bridge = new ExtensionRelayBridge();
+    const active = wireExtension(bridge);
+    sendHello(active.handlers);
+
+    const firstSocket = new FakeSocket();
+    const first = bridge.attachExtensionSocket(firstSocket);
+    const secondSocket = new FakeSocket();
+    const second = bridge.attachExtensionSocket(secondSocket);
+    expect(active.socket.closed).toBe(false);
+
+    second.onMessage(
+      JSON.stringify({
+        type: "hello",
+        userAgent: "second",
+        browserVersion: "Chrome/146.0.0.0",
+        extensionVersion: "2.0.0",
+        tabs: [],
+      }),
+    );
+    expect(active.socket.closed).toBe(true);
+    expect(firstSocket.closed).toBe(false);
+    expect(secondSocket.closed).toBe(false);
+    expect(bridge.identity?.browserVersion).toBe("Chrome/146.0.0.0");
+
+    first.onMessage(
+      JSON.stringify({
+        type: "hello",
+        userAgent: "first",
+        browserVersion: "Chrome/145.0.0.0",
+        extensionVersion: "2.0.0",
+        tabs: [],
+      }),
+    );
+    expect(firstSocket).toMatchObject({
+      closed: true,
+      closeCode: 4000,
+      closeReason: "superseded by newer extension connection",
+    });
+    expect(bridge.identity?.browserVersion).toBe("Chrome/146.0.0.0");
+
+    first.onClose();
+    active.handlers.onClose();
+    expect(bridge.extensionConnected).toBe(true);
+    expect(secondSocket.closed).toBe(false);
   });
 
   it("answers the Puppeteer connect bootstrap without protocol errors", async () => {

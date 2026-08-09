@@ -98,6 +98,7 @@ function toErrorPayload(
  */
 export class ExtensionRelayBridge {
   private extension: { socket: BridgeSocket; identity: ExtensionIdentity } | null = null;
+  private readonly extensionCandidates = new Set<BridgeSocket>();
   private readonly clients = new Set<CdpClientState>();
   private readonly tabs = new Map<number, TabState>();
   /** Browser-level sessions created by Playwright for page-scoped CDP access. */
@@ -109,7 +110,10 @@ export class ExtensionRelayBridge {
   private readonly pendingExtension = new Map<number, PendingExtensionCommand>();
   private nextSeq = 1;
   private nextSessionOrdinal = 1;
+  private nextExtensionCandidateOrdinal = 1;
+  private latestPromotedCandidateOrdinal = 0;
   private pingTimer: NodeJS.Timeout | null = null;
+  private missedPongs = 0;
   private readonly onStateChange?: () => void;
   private readonly onPageShare?: (payload: PageSharePayload) => Promise<void>;
 
@@ -171,26 +175,41 @@ export class ExtensionRelayBridge {
     onMessage: (raw: string) => void;
     onClose: () => void;
   } {
-    if (this.extension) {
-      // Replace the previous connection: MV3 service workers restart and the
-      // stale socket may linger half-open. Newest connection wins.
-      log.info("extension reconnected; replacing previous relay connection");
-      this.extension.socket.close(4000, "replaced by newer extension connection");
-      this.handleExtensionGone();
-    }
-    let helloSeen = false;
+    const candidateOrdinal = this.nextExtensionCandidateOrdinal++;
+    let candidateState: "awaiting-hello" | "active" | "rejected" = "awaiting-hello";
+    this.extensionCandidates.add(socket);
+    const rejectCandidate = (code: number, reason: string) => {
+      candidateState = "rejected";
+      this.extensionCandidates.delete(socket);
+      socket.close(code, reason);
+    };
     const onMessage = (raw: string) => {
-      const msg = parseExtensionMessage(raw);
-      if (!msg) {
-        log.warn("dropping malformed extension relay frame");
+      if (candidateState === "rejected") {
         return;
       }
-      if (!helloSeen) {
-        if (msg.type !== "hello") {
-          socket.close(4001, "expected hello");
+      const msg = parseExtensionMessage(raw);
+      if (candidateState === "awaiting-hello") {
+        if (msg?.type !== "hello") {
+          rejectCandidate(4001, "expected valid hello");
           return;
         }
-        helloSeen = true;
+        if (candidateOrdinal < this.latestPromotedCandidateOrdinal) {
+          rejectCandidate(4000, "superseded by newer extension connection");
+          return;
+        }
+        candidateState = "active";
+        this.extensionCandidates.delete(socket);
+        this.latestPromotedCandidateOrdinal = candidateOrdinal;
+        if (this.extension) {
+          // Authentication happens before bridge attachment. Keep the active
+          // socket until its replacement also proves it can speak the relay protocol.
+          log.info("extension reconnected; replacing previous relay connection");
+          const previous = this.extension;
+          previous.socket.close(4000, "replaced by newer extension connection");
+          if (this.extension === previous) {
+            this.handleExtensionGone();
+          }
+        }
         this.extension = {
           socket,
           identity: {
@@ -204,9 +223,18 @@ export class ExtensionRelayBridge {
         this.onStateChange?.();
         return;
       }
+      if (this.extension?.socket !== socket) {
+        return;
+      }
+      if (!msg) {
+        log.warn("dropping malformed extension relay frame");
+        return;
+      }
       this.handleExtensionMessage(msg);
     };
     const onClose = () => {
+      candidateState = "rejected";
+      this.extensionCandidates.delete(socket);
       if (this.extension?.socket === socket) {
         this.handleExtensionGone();
         this.onStateChange?.();
@@ -256,6 +284,8 @@ export class ExtensionRelayBridge {
         break;
       }
       case "pong":
+        this.missedPongs = 0;
+        break;
       case "hello":
         break;
     }
@@ -330,13 +360,27 @@ export class ExtensionRelayBridge {
 
   private startPing(): void {
     this.stopPing();
+    const owner = this.extension;
     this.pingTimer = setInterval(() => {
+      if (!owner || this.extension !== owner) {
+        return;
+      }
+      // An OPEN socket can outlive a dead worker; only its pong proves commands still arrive.
+      if (++this.missedPongs > 2) {
+        owner.socket.close(4000, "extension heartbeat timeout");
+        if (this.extension === owner) {
+          this.handleExtensionGone();
+          this.onStateChange?.();
+        }
+        return;
+      }
       this.sendToExtension({ type: "ping" });
     }, EXTENSION_PING_INTERVAL_MS);
     this.pingTimer.unref?.();
   }
 
   private stopPing(): void {
+    this.missedPongs = 0;
     if (this.pingTimer) {
       clearInterval(this.pingTimer);
       this.pingTimer = null;
@@ -977,6 +1021,10 @@ export class ExtensionRelayBridge {
       pending.reject(new Error("extension relay stopped"));
     }
     this.pendingExtension.clear();
+    for (const candidate of this.extensionCandidates) {
+      candidate.close(1001, "relay stopped");
+    }
+    this.extensionCandidates.clear();
     this.extension?.socket.close(1001, "relay stopped");
     this.extension = null;
     for (const client of this.clients) {
