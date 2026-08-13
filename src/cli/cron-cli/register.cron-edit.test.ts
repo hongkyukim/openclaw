@@ -1,4 +1,7 @@
 // Cron edit register tests cover cron edit command registration and option wiring.
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { Command } from "commander";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { defaultRuntime } from "../../runtime.js";
@@ -50,7 +53,42 @@ describe("cron edit command", () => {
     const help = editCommand?.helpInformation() ?? "";
 
     expect(help).toContain("--best-effort-deliver");
+    expect(help).toContain("--display-name <name>");
+    expect(help).toContain("--clear-display-name");
     expect(help).toMatch(/also\s+implies --announce when used alone/);
+  });
+
+  it("updates the human-readable display name without changing the job name", async () => {
+    await createCronProgram().parseAsync(["edit", "job-1", "--display-name", "Daily summary"], {
+      from: "user",
+    });
+
+    expect(callGatewayFromCli).toHaveBeenCalledWith("cron.update", expect.anything(), {
+      id: "job-1",
+      patch: { displayName: "Daily summary" },
+    });
+  });
+
+  it.each(["", "   "])("rejects a blank --display-name value", async (value) => {
+    await expectCronEditRejection(["--display-name", value], "--display-name must not be blank");
+  });
+
+  it("clears the display name and restores the stable name fallback", async () => {
+    await createCronProgram().parseAsync(["edit", "job-1", "--clear-display-name"], {
+      from: "user",
+    });
+
+    expect(callGatewayFromCli).toHaveBeenCalledWith("cron.update", expect.anything(), {
+      id: "job-1",
+      patch: { displayName: null },
+    });
+  });
+
+  it("rejects combining display-name set and clear flags", async () => {
+    await expectCronEditRejection(
+      ["--display-name", "Daily summary", "--clear-display-name"],
+      "Use --display-name or --clear-display-name, not both",
+    );
   });
 
   it("updates one pacing bound while preserving the other", async () => {
@@ -68,6 +106,81 @@ describe("cron edit command", () => {
       id: "job-1",
       patch: { pacing: { min: "30m", max: "4h" } },
     });
+  });
+
+  it("preserves existing trigger.once when only the script body is replaced (#119916)", async () => {
+    const fixtureDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "cron-edit-cli-"));
+    const scriptPath = path.join(fixtureDir, "next.js");
+    await fs.promises.writeFile(scriptPath, "return { fire: true };", "utf8");
+    const configRevision = "trigger-script-revision";
+    callGatewayFromCli.mockImplementation(async (method: string) => {
+      if (method === "cron.get") {
+        return {
+          id: "job-1",
+          configRevision,
+          trigger: { script: "return { fire: false };", once: true },
+        };
+      }
+      return { ok: true };
+    });
+
+    try {
+      await createCronProgram().parseAsync(["edit", "job-1", "--trigger-script", scriptPath], {
+        from: "user",
+      });
+    } finally {
+      await fs.promises.rm(fixtureDir, { recursive: true, force: true });
+    }
+
+    expect(callGatewayFromCli).toHaveBeenCalledWith(
+      "cron.update",
+      expect.anything(),
+      expect.objectContaining({
+        id: "job-1",
+        patch: { trigger: { script: "return { fire: true };", once: true } },
+        expectedConfigRevision: configRevision,
+      }),
+    );
+  });
+
+  it.each([
+    ["empty", "", undefined],
+    ["whitespace", "   ", undefined],
+    ["empty with --clear-trigger", "", "--clear-trigger"],
+    ["whitespace with --clear-trigger", "   ", "--clear-trigger"],
+  ])("rejects %s --trigger-script before Gateway access", async (_label, value, clearFlag) => {
+    await expectCronEditRejection(
+      ["--trigger-script", value, ...(clearFlag ? [clearFlag] : [])],
+      "--trigger-script must not be blank",
+    );
+  });
+
+  it("validates trigger script files before Gateway access", async () => {
+    const fixtureDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "cron-edit-invalid-"));
+    const emptyPath = path.join(fixtureDir, "empty.js");
+    const oversizedPath = path.join(fixtureDir, "oversized.js");
+    const missingPath = path.join(fixtureDir, "missing.js");
+    await Promise.all([
+      fs.promises.writeFile(emptyPath, " \n", "utf8"),
+      fs.promises.writeFile(oversizedPath, "x".repeat(65_537), "utf8"),
+    ]);
+
+    try {
+      await expectCronEditRejection(
+        ["--pacing-min", "30m", "--trigger-script", emptyPath],
+        "Trigger script must not be empty",
+      );
+      await expectCronEditRejection(
+        ["--pacing-min", "30m", "--trigger-script", oversizedPath],
+        "Trigger script exceeds 65536 bytes",
+      );
+      await expectCronEditRejection(
+        ["--pacing-min", "30m", "--trigger-script", missingPath],
+        "ENOENT",
+      );
+    } finally {
+      await fs.promises.rm(fixtureDir, { recursive: true, force: true });
+    }
   });
 
   it("reuses one versioned snapshot for combined pacing and tool edits", async () => {

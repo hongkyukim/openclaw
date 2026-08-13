@@ -189,12 +189,8 @@ beforeEach(() => {
   pluginMetadataSnapshot?.rebindForCurrentEnv();
 });
 
-async function makeTempDir(): Promise<string> {
-  return await suiteTempRootTracker.make("case");
-}
-
 async function createMainAgentFixture() {
-  const stateDir = await makeTempDir();
+  const stateDir = await suiteTempRootTracker.make("case");
   const agentDir = path.join(stateDir, "agent");
   const initialConfig = {
     agents: { list: [{ id: "main", default: true, agentDir }] },
@@ -291,9 +287,9 @@ function withSuiteFixtures<
     Object.getOwnPropertyDescriptors(input ?? {}),
   ) as T;
   if (!deps.createTempDir) {
-    deps.createTempDir = makeTempDir;
+    deps.createTempDir = suiteTempRootTracker.make;
   }
-  if (deps.createTempDir === makeTempDir && !deps.removeTempDir) {
+  if (deps.createTempDir === suiteTempRootTracker.make && !deps.removeTempDir) {
     deps.removeTempDir = deferSuiteTempDirCleanup;
   }
   if (!deps.readCodexCliActiveApiKey) {
@@ -1597,7 +1593,7 @@ describe("activateSetupInference", () => {
   });
 
   it("disposes the temporary auth database before Windows-style removal", async () => {
-    const tempDir = await makeTempDir();
+    const tempDir = await suiteTempRootTracker.make("case");
     const databasePath = path.join(tempDir, "agent", "openclaw-agent.sqlite");
     let disposed = false;
     const disposeDatabase = vi.fn((pathname: string) => {
@@ -2078,6 +2074,7 @@ describe("activateSetupInference", () => {
 
     const result = await activateSetupInference({
       kind: "openai-api-key",
+      modelRef: "openai/gpt-5.6",
       deps: {
         readConfigFileSnapshot: mockConfigSnapshot(sourceConfig, { runtimeConfig }),
         runEmbeddedAgent: runEmbeddedAgent as never,
@@ -2128,7 +2125,7 @@ describe("activateSetupInference", () => {
     const result = await activateSetupInference({
       kind: "openai-api-key",
       deps: {
-        runEmbeddedAgent: vi.fn(successfulRunner("openai", "gpt-5.6")) as never,
+        runEmbeddedAgent: vi.fn(successfulRunner("openai", "gpt-5.6-sol")) as never,
         transformConfigWithPendingPluginInstalls: configHarness.transform as never,
         // The real revalidation throws when the current route owner no longer
         // matches the probe credential (e.g. a Codex-imported OAuth profile
@@ -2374,7 +2371,7 @@ describe("activateSetupInference", () => {
         agentId: "execution-agent",
         routeAgentId: "route-agent",
       },
-      tempDir: await makeTempDir(),
+      tempDir: await suiteTempRootTracker.make("case"),
       deps: { runEmbeddedAgent: runEmbeddedAgent as never },
       authProfileStateMode: "read-only",
       requireExecutionOwner: false,
@@ -2647,21 +2644,21 @@ describe("activateSetupInference", () => {
     const runAuth = vi.fn(async () => ({
       profiles: [
         {
-          profileId: "ollama:default",
+          profileId: "local-test:default",
           credential: {
             type: "api_key" as const,
-            provider: "ollama",
-            key: "ollama-local",
+            provider: "local-test",
+            key: "local-test-key",
           },
         },
       ],
       configPatch: {
         models: {
           providers: {
-            ollama: {
-              baseUrl: "http://127.0.0.1:11434",
+            "local-test": {
+              baseUrl: "http://127.0.0.1:12345",
               api: "ollama" as const,
-              apiKey: "ollama-local",
+              apiKey: "local-test-key",
               models: [],
             },
           },
@@ -2669,19 +2666,19 @@ describe("activateSetupInference", () => {
       },
     }));
     const detect = vi.fn(async () => ({
-      modelRef: "ollama/qwen3.5:4b",
-      detail: "qwen3.5:4b at http://127.0.0.1:11434",
+      modelRef: "local-test/qwen-test",
+      detail: "qwen-test at http://127.0.0.1:12345",
     }));
     const prepare = vi.fn(async () => ({
       profiles: [],
-      defaultModel: "ollama/qwen3.5:4b",
+      defaultModel: "local-test/qwen-test",
       configPatch: {
         models: {
           providers: {
-            ollama: {
-              baseUrl: "http://127.0.0.1:11434",
+            "local-test": {
+              baseUrl: "http://127.0.0.1:12345",
               api: "ollama" as const,
-              apiKey: "ollama-local",
+              apiKey: "local-test-key",
               models: [],
             },
           },
@@ -2689,13 +2686,13 @@ describe("activateSetupInference", () => {
       },
     }));
     const provider: ProviderPlugin = {
-      id: "ollama",
-      label: "Ollama",
-      pluginId: "ollama",
+      id: "local-test",
+      label: "Local Test Provider",
+      pluginId: "local-test",
       auth: [
         {
           id: "local",
-          label: "Ollama",
+          label: "Local Test Provider",
           kind: "custom",
           run: runAuth,
           appGuidedSetup: { detect, prepare },
@@ -2704,14 +2701,14 @@ describe("activateSetupInference", () => {
     };
     const runEmbeddedAgent = vi.fn(
       async (params: SuccessfulRunParams & { authProfileId?: string }) =>
-        successfulRun("ollama", "qwen3.5:4b", params),
+        successfulRun("local-test", "qwen-test", params),
     );
     const configHarness = createConfigTransformHarness(initialConfig);
 
     try {
       const result = await activateSetupInference({
         kind: "provider-auth",
-        authChoice: "ollama",
+        authChoice: "local-test",
         workspace: "/tmp/openclaw-workspace",
         prompter: { note: vi.fn(async () => {}) } as never,
         deps: {
@@ -2720,11 +2717,11 @@ describe("activateSetupInference", () => {
           }),
           resolvePluginProviders: () => [provider],
           resolveManifestProviderAuthChoice: () => ({
-            pluginId: "ollama",
-            providerId: "ollama",
+            pluginId: "local-test",
+            providerId: "local-test",
             methodId: "local",
-            choiceId: "ollama",
-            choiceLabel: "Ollama",
+            choiceId: "local-test",
+            choiceLabel: "Local Test Provider",
             appGuidedDiscovery: true,
           }),
           runEmbeddedAgent: runEmbeddedAgent as never,
@@ -2732,16 +2729,16 @@ describe("activateSetupInference", () => {
         },
       });
 
-      expect(result).toMatchObject({ ok: true, modelRef: "ollama/qwen3.5:4b" });
+      expect(result).toMatchObject({ ok: true, modelRef: "local-test/qwen-test" });
       expect(runAuth).toHaveBeenCalledOnce();
       expect(detect).toHaveBeenCalledWith(
         expect.objectContaining({
           config: expect.objectContaining({
             models: {
               providers: {
-                ollama: expect.objectContaining({
-                  baseUrl: "http://127.0.0.1:11434",
-                  apiKey: "ollama-local",
+                "local-test": expect.objectContaining({
+                  baseUrl: "http://127.0.0.1:12345",
+                  apiKey: "local-test-key",
                 }),
               },
             },
@@ -2749,7 +2746,7 @@ describe("activateSetupInference", () => {
         }),
       );
       expect(prepare).toHaveBeenCalledWith(
-        expect.objectContaining({ modelRef: "ollama/qwen3.5:4b" }),
+        expect.objectContaining({ modelRef: "local-test/qwen-test" }),
       );
     } finally {
       await removeOAuthTestTempRoot(stateDir);
@@ -2796,7 +2793,7 @@ describe("activateSetupInference", () => {
   ])(
     "uses a provider-owned $name method and persists it after a passing test",
     async ({ authKind, credentialType }) => {
-      const stateDir = await makeTempDir();
+      const stateDir = await suiteTempRootTracker.make("case");
       const agentDir = path.join(stateDir, "agent");
       const initialConfig = {
         agents: { list: [{ id: "main", default: true, agentDir }] },
@@ -2975,7 +2972,7 @@ describe("activateSetupInference", () => {
   });
 
   it("scopes provider setup to the selected inference route and one credential", async () => {
-    const stateDir = await makeTempDir();
+    const stateDir = await suiteTempRootTracker.make("case");
     const agentDir = path.join(stateDir, "agent");
     const initialConfig = {
       gateway: { port: 18_789 },
@@ -3220,7 +3217,7 @@ describe("activateSetupInference", () => {
   });
 
   it("rolls back a staged key when the config commit fails", async () => {
-    const stateDir = await makeTempDir();
+    const stateDir = await suiteTempRootTracker.make("case");
     const agentDir = path.join(stateDir, "agent");
     const initialConfig = {
       agents: { list: [{ id: "main", default: true, agentDir }] },
@@ -3598,7 +3595,7 @@ describe("activateSetupInference", () => {
   });
 
   it("ignores an unrelated provider patch and preserves a concurrent operator edit", async () => {
-    const stateDir = await makeTempDir();
+    const stateDir = await suiteTempRootTracker.make("case");
     const agentDir = path.join(stateDir, "agent");
     const auxProvider = {
       baseUrl: "https://aux.example.test/v1",
@@ -3715,7 +3712,7 @@ describe("activateSetupInference", () => {
     },
   ])("$name without starting interactive login", async (testCase) => {
     const { existingModel, starterModel, expectedSetupInputModel } = testCase;
-    const stateDir = await makeTempDir();
+    const stateDir = await suiteTempRootTracker.make("case");
     const agentDir = path.join(stateDir, "agent");
     const runInteractive = vi.fn();
     const runNonInteractive = vi.fn(
@@ -4682,7 +4679,7 @@ describe("activateSetupInference", () => {
         invalidatePluginRuntimeDiscoveryAfterConfigMutation: vi.fn(async () => {}) as never,
         refreshPluginRegistryAfterConfigMutation: refreshPluginRegistry as never,
         createTempDir: async () => {
-          tempDir = await makeTempDir();
+          tempDir = await suiteTempRootTracker.make("case");
           return tempDir;
         },
       },
@@ -4800,7 +4797,7 @@ describe("activateSetupInference", () => {
   });
 
   it("marks an unowned Codex package generation retained when the live test fails", async () => {
-    const installProjectDir = await makeTempDir();
+    const installProjectDir = await suiteTempRootTracker.make("case");
     const packageDir = path.join(installProjectDir, "node_modules", "@openclaw", "codex");
     await fs.mkdir(packageDir, { recursive: true });
     const transformConfig = vi.fn();
@@ -5379,7 +5376,7 @@ describe("verifySetupInference", () => {
     ["missing default-agent model", { exists: true, valid: true, config: {} }],
   ])("rejects %s before starting a model", async (_label, snapshot) => {
     const runEmbeddedAgent = vi.fn();
-    const createTempDir = vi.fn(makeTempDir);
+    const createTempDir = vi.fn(suiteTempRootTracker.make);
 
     const result = await verifySetupInference({
       deps: {
@@ -5396,7 +5393,7 @@ describe("verifySetupInference", () => {
 
   it("reports invalid config without starting a live check", async () => {
     const runEmbeddedAgent = vi.fn();
-    const createTempDir = vi.fn(makeTempDir);
+    const createTempDir = vi.fn(suiteTempRootTracker.make);
     const result = await verifySetupInference({
       deps: {
         readConfigFileSnapshot: mockConfigSnapshot(
@@ -5578,7 +5575,7 @@ describe("verifySetupInference", () => {
   });
 
   it("binds a runtime-only Codex profile after activation and runs the first OpenClaw turn", async () => {
-    const stateDir = await makeTempDir();
+    const stateDir = await suiteTempRootTracker.make("case");
     vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
     const profileId = "openai:default";
     const credential = {
@@ -5765,7 +5762,7 @@ describe("verifySetupInference", () => {
   });
 
   it("returns a refreshed staged profile without changing the configured agent store", async () => {
-    const stateDir = await makeTempDir();
+    const stateDir = await suiteTempRootTracker.make("case");
     const agentDir = path.join(stateDir, "configured-agent");
     const profileId = "openai:default";
     seedInMemoryAuthProfileStore(agentDir, {
@@ -6150,7 +6147,7 @@ describe("verifySetupInference", () => {
       },
     },
   ])("resolves $name but rejects Gemini CLI as a setup verifier", async (testCase) => {
-    const stateDir = await makeTempDir();
+    const stateDir = await suiteTempRootTracker.make("case");
     const agentDir = path.join(stateDir, "agent");
     const runCliAgent = vi.fn(async () =>
       successfulRun("google-gemini-cli", "gemini-3.1-pro-preview"),

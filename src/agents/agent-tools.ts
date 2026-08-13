@@ -13,9 +13,11 @@ import type { ChatType } from "../channels/chat-type.js";
 import type { InboundEventKind } from "../channels/inbound-event/kind.js";
 import type { ModelCompatConfig } from "../config/types.models.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { GroupToolPolicyConfig } from "../config/types.tools.js";
 import type { DiagnosticTraceContext } from "../infra/diagnostic-trace-context.js";
 import { resolveEventSessionRoutingPolicy } from "../infra/event-session-routing.js";
 import { applyExecPolicyLayer } from "../infra/exec-policy.js";
+import { mergeGatewayAgentCliPath } from "../infra/openclaw-cli-shim.js";
 import { logWarn } from "../logger.js";
 import type {
   PluginHookChannelContext,
@@ -40,6 +42,7 @@ import {
 import type { AnyAgentTool } from "./agent-tools.types.js";
 import { isApplyPatchAllowedForModel } from "./apply-patch-model-policy.js";
 import type { AuthProfileStore } from "./auth-profiles/types.js";
+import { resolveProcessToolScopeKey } from "./bash-process-scope.js";
 import type { ExecToolDefaults } from "./bash-tools.exec-types.js";
 import type { ProcessToolDefaults } from "./bash-tools.process.js";
 import { listChannelAgentTools } from "./channel-tools.js";
@@ -76,7 +79,7 @@ import {
   createReadTool,
   createWriteTool,
 } from "./sessions/index.js";
-import type { TrustedSubagentCompletionHandoff } from "./subagent-announce-handoff.js";
+import type { TrustedSubagentCompletionHandoff } from "./subagents/announce/subagent-announce-handoff.js";
 import { createToolFsPolicy, resolveToolFsConfig } from "./tool-fs-policy.js";
 import { resolveToolLoopDetectionConfig } from "./tool-loop-detection-config.js";
 import { buildDeclaredToolAllowlistContext } from "./tool-policy-declared-context.js";
@@ -85,7 +88,7 @@ import { applyToolPolicyPipeline } from "./tool-policy-pipeline.js";
 import {
   expandToolGroups,
   hasRestrictiveAllowPolicy,
-  normalizeToolName,
+  normalizeToolPolicyName,
   replaceWithEffectiveToolAllowlist,
 } from "./tool-policy.js";
 import {
@@ -98,6 +101,7 @@ import {
   type ToolSearchCatalogRef,
   type ToolSearchCatalogToolExecutor,
 } from "./tool-search.js";
+import { AUTOMATIONS_TOOL_NAME } from "./tools/automations-tool-name.js";
 import {
   replaceWithEffectiveCronCreatorToolAllowlist,
   type CronCreatorToolAllowlistEntry,
@@ -107,29 +111,6 @@ import type { CronToolOptions } from "./tools/cron-tool.types.js";
 import { wrapToolWithGatewayCallerIdentity } from "./tools/gateway-caller-context.js";
 
 const MEMORY_FLUSH_ALLOWED_TOOL_NAMES = new Set(["read", "write"]);
-
-/** Resolve the process-tool isolation key for exec/process session state. */
-export function resolveProcessToolScopeKey(params: {
-  scopeKey?: string;
-  sessionKey?: string;
-  sessionId?: string;
-  agentId?: string;
-}): string | undefined {
-  const explicitScopeKey = params.scopeKey?.trim();
-  if (explicitScopeKey) {
-    return explicitScopeKey;
-  }
-  const sessionKey = params.sessionKey?.trim();
-  if (sessionKey) {
-    return sessionKey;
-  }
-  const sessionId = params.sessionId?.trim();
-  if (sessionId) {
-    return sessionId;
-  }
-  const agentId = params.agentId?.trim();
-  return agentId ? `agent:${agentId}` : undefined;
-}
 
 function applyModelProviderToolPolicy(
   toolsInput: AnyAgentTool[],
@@ -374,6 +355,8 @@ type OpenClawCodingToolsOptions = {
   skillUsagePaths?: SkillUsagePath[];
   /** Prepared conversation-scoped facts for callers that already resolved this run context. */
   conversationCapabilityProfile?: ResolvedConversationCapabilityProfile;
+  /** Trusted conversation policy prepared at channel ingress. */
+  conversationToolPolicy?: GroupToolPolicyConfig;
   inputProvenance?: InputProvenance;
   /** Consumed in-process completion capability; never derived from model-facing input. */
   trustedInternalHandoff?: TrustedSubagentCompletionHandoff;
@@ -410,6 +393,7 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
       chatType: options?.chatType,
       messageTo: options?.messageTo,
       messageThreadId: options?.messageThreadId,
+      conversationToolPolicy: options?.conversationToolPolicy,
       currentChannelId: options?.currentChannelId,
       currentMessagingTarget: options?.currentMessagingTarget,
       currentThreadTs: options?.currentThreadTs,
@@ -461,7 +445,7 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
   const runtimeToolAllowlistIncludesMessage = expandToolGroups(
     options?.runtimeToolAllowlist ?? [],
   ).some((toolName) => {
-    const normalized = normalizeToolName(toolName);
+    const normalized = normalizeToolPolicyName(toolName);
     return normalized === "*" || normalized === "message";
   });
   // The verified requester profile owns completion authority; its delivery grant
@@ -591,7 +575,7 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
       reviewer: options?.exec?.reviewer ?? execConfig.reviewer,
       trigger: options?.trigger,
       node: options?.exec?.node ?? execConfig.node,
-      pathPrepend: options?.exec?.pathPrepend ?? execConfig.pathPrepend,
+      pathPrepend: mergeGatewayAgentCliPath(options?.exec?.pathPrepend ?? execConfig.pathPrepend),
       safeBins: options?.exec?.safeBins ?? execConfig.safeBins,
       strictInlineEval: options?.exec?.strictInlineEval ?? execConfig.strictInlineEval,
       commandHighlighting: options?.exec?.commandHighlighting ?? execConfig.commandHighlighting,
@@ -635,8 +619,15 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
     },
     recordToolPrepStage: options?.recordToolPrepStage,
   });
+  const cronCreatorAuthorityResolver = bindActiveCronCreatorAuthorityResolver(options?.runId);
+  // A fresh exact-run capability authorizes only automation creation. Keep every
+  // other owner-only control-plane tool denied for senderless operator turns.
   const ownerOnlyCoreToolDenylist =
-    options?.senderIsOwner === false ? [...GATEWAY_OWNER_ONLY_CORE_TOOLS] : [];
+    options?.senderIsOwner === false
+      ? GATEWAY_OWNER_ONLY_CORE_TOOLS.filter(
+          (toolName) => toolName !== AUTOMATIONS_TOOL_NAME || !cronCreatorAuthorityResolver,
+        )
+      : [];
   const ownerOnlyCoreToolPolicy =
     ownerOnlyCoreToolDenylist.length > 0 ? { deny: ownerOnlyCoreToolDenylist } : undefined;
   const pluginToolAllowlist = appendRuntimePluginToolGrant(
@@ -785,7 +776,7 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
             pluginToolDenylist,
             cronCreatorToolAllowlist,
             cronCreatorToolAllowlistCaptureRef,
-            resolveCronCreatorToolAuthority: bindActiveCronCreatorAuthorityResolver(options?.runId),
+            resolveCronCreatorToolAuthority: cronCreatorAuthorityResolver,
             cronCreatorAuthorityUnavailableReason: options?.cronCreatorAuthorityUnavailableReason,
             currentChannelId: options?.currentChannelId,
             currentChatType: options?.chatType,
